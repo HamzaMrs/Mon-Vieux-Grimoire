@@ -1,93 +1,52 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const validator = require('validator');
-const rateLimit = require('express-rate-limit');
 const User = require('../models/User');
 
-// Use of a secret key
-const secret = process.env.JWT_SECRET || 'defaultSecretKey';
-
-// limiting time between connexion attempts
-const loginLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5, // Limite à 5 tentatives de connexion par IP
-    message: 'Trop de tentatives de connexion, réessayez dans 15 minutes'
-});
-
-// control if strong passwordd
-function isStrongPassword(password) {
-    const minLength = 8;
-    const hasUpperCase = /[A-Z]/.test(password);
-    const hasLowerCase = /[a-z]/.test(password);
-    const hasNumbers = /[0-9]/.test(password);
-    const hasSpecialChar = /[\W_]/.test(password); 
-
-    return (
-        password.length >= minLength &&
-        hasUpperCase &&
-        hasLowerCase &&
-        hasNumbers &&
-        hasSpecialChar
-    );
-}
-
+// Création d'un nouvel utilisateur. bcrypt hashe le mot de passe, puis save le sauvegarde dans la BDD
 exports.signup = (req, res, next) => {
-    // Validate email before proceeding
-    if (!validator.isEmail(req.body.email)) {
-        return res.status(400).json({ message: 'Email invalide' });
-    }
-
-    // Confirm password complexity
-    if (!isStrongPassword(req.body.password)) {
-        return res.status(400).json({
-            message: 'Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule, un chiffre et un caractère spécial.'
-        });
-    }
-
-    // Password hashing at increased cost for greater security
-    bcrypt.hash(req.body.password, 12) 
-        .then(hash => {
-            const user = new User({
-                email: req.body.email,
-                password: hash
-            });
-            user.save()
-                .then(() => res.status(201).json({ message: 'Utilisateur créé!' }))
-                .catch(error => res.status(400).json({ error }));
-        })
-        .catch(error => res.status(500).json({ error }));
+    bcrypt.hash(req.body.password, 10)
+    .then(hash => {
+      const user = new User({
+        email: req.body.email,
+        password: hash
+      });
+      user.save()
+        .then(() => res.status(201).json({ message: 'Utilisateur créé !' }))
+        .catch(error => res.status(400).json({ error }));
+    })
+    .catch(error => res.status(500).json({ error }));  
 };
 
+
+// Fonction de login pour authentifier l'utilisateur
 exports.login = (req, res, next) => {
-    // Validate email before proceeding
-    if (!validator.isEmail(req.body.email)) {
-        return res.status(400).json({ message: 'Email invalide' });
-    }
-
+    // Recherche de l'utilisateur par email
     User.findOne({ email: req.body.email })
-        .then(user => {
-            if (!user) {
-                return res.status(401).json({ message: 'Paire login/mot de passe incorrecte' });
+      .then(user => {
+        // Si l'utilisateur n'est pas trouvé, renvoyer une erreur 401 Unauthorized
+        if (!user) {
+          return res.status(401).json({ message: 'Paire login/mot de passe incorrecte' });
+        }
+  
+        // Comparaison du mot de passe fourni avec celui stocké dans la base de données
+        bcrypt.compare(req.body.password, user.password)
+          .then(valid => {
+            // Si le mot de passe est incorrect, renvoyer une erreur 401 Unauthorized
+            if (!valid) {
+              return res.status(401).json({ message: 'Paire login/mot de passe incorrecte' });
             }
-            // Secure hashed password comparison
-            bcrypt.compare(req.body.password, user.password)
-                .then(valid => {
-                    if (!valid) {
-                        return res.status(401).json({ message: 'Paire login/mot de passe incorrecte' });
-                    }
-                    res.status(200).json({
-                        userId: user._id,
-                        token: jwt.sign(
-                            { userId: user._id },
-                            secret, // Secure secret key
-                            { expiresIn: '24h' } // Token lifetime
-                        )
-                    });
-                })
-                .catch(error => res.status(500).json({ error }));
-        })
-        .catch(error => res.status(500).json({ error }));
+  
+            // Si le mot de passe est correct, renvoyer une réponse 200 OK avec le userId et le token JWT
+            res.status(200).json({
+              userId: user._id,
+              token: jwt.sign(
+                { userId: user._id }, // Données à encoder dans le token
+                'SECRET_KEY', // Clé secrète pour signer le token
+                { expiresIn: '24h' } // Durée de validité du token
+                    )
+                });
+            })
+            .catch(error => res.status(500).json({ error }));
+    })
+    .catch(error => res.status(500).json({ error }));
 };
-
-// Export the limiter for use in routes
-exports.loginLimiter = loginLimiter;
