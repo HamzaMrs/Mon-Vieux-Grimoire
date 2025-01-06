@@ -3,49 +3,69 @@ const fs = require("fs");
 
 // Créer un livre
 exports.createBook = (req, res, next) => {
-  const bookObject = JSON.parse(req.body.book);
-  delete bookObject._id;
-  delete bookObject._userId;
-  const book = new Book({
-    ...bookObject,
-    userId: req.auth.userId,
-    imageUrl: `${req.protocol}://${req.get("host")}/images/${
-      req.file.filename
-    }`,
-  });
-
-  book
-    .save()
-    .then(() => {
-      res.status(201).json({ message: "Livre enregistré !" });
-    })
-    .catch((error) => {
-      res.status(400).json({ error });
+    console.log("Données reçues : ", req.body);
+    console.log("Fichier reçu : ", req.file);
+  
+    const bookObject = JSON.parse(req.body.book);
+    console.log("Objet Book : ", bookObject);
+    
+    delete bookObject._id;
+    delete bookObject._userId;
+  
+    const book = new Book({
+      ...bookObject,
+      userId: req.auth.userId,
+      imageUrl: `${req.protocol}://${req.get("host")}/images/${
+        req.file.filename
+      }`,
     });
-};
+  
+    book
+      .save()
+      .then(() => {
+        res.status(201).json({ message: "Livre enregistré !" });
+      })
+      .catch((error) => {
+        console.error("Erreur lors de l'enregistrement :", error);
+        res.status(400).json({ error });
+      });
+  };
+  
 
 
 //Obtenir tout les livres
 exports.getAllBooks = (req, res, next) => {
-  Book.find()
-  .then ((books)=>{
-    res.status(201).json(books)
-  })
-  .catch((error)=>{
-    res.status(400).json({ error })
-  })
-}
+    Book.find()
+      .then((books) => {
+        res.status(200).json(books);  
+      })
+      .catch((error) => {
+        console.error("Erreur lors de la récupération des livres:", error);
+        res.status(400).json({ error });
+      });
+  };
 
 //Obtenir un seul livre par son ID
 exports.getOneBook = (req, res, next) => {
-  Book.findOne({_id:req.params.id})
-  .then ((books)=>{
-    res.status(201).json(books)
-  })
-  .catch((error)=>{
-    res.status(400).json({ error })
-  })
-}
+    const bookId = req.params.id;
+  
+    if (!mongoose.Types.ObjectId.isValid(bookId)) {
+      return res.status(400).json({ message: "ID invalide pour le livre." });
+    }
+  
+    Book.findOne({ _id: bookId })
+      .then((book) => {
+        if (!book) {
+          return res.status(404).json({ message: "Livre non trouvé." });
+        }
+        console.log("Livre trouvé : ", book);
+        res.status(200).json(book);
+      })
+      .catch((error) => {
+        console.error("Erreur lors de la récupération du livre : ", error);
+        res.status(500).json({ error });
+      });
+  };
 
 // Modifier un livre
 exports.modifyBook = (req, res, next) => {
