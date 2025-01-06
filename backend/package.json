@@ -15,7 +15,7 @@
     "project6",
     "api"
   ],
-  "author": "Hamza Mars",
+  "author": "",
   "license": "ISC",
   "dependencies": {
     "bcrypt": "^5.1.1",

@@ -6,13 +6,13 @@ require('dotenv').config();
 const booksRoutes = require('./routes/books');  // On importe les routes
 const userRoutes = require('./routes/user');   // Si tu as des routes pour l'authentification
 
-const app = express();
-
 // Connexion à la base de données MongoDB
 const connectLink = 'mongodb://127.0.0.1:27017/ma_base'; 
 mongoose.connect(connectLink)
   .then(() => console.log('Connexion à MongoDB réussie !'))
   .catch(() => console.log('Connexion à MongoDB échouée !'));
+
+  const app = express();
 
 // Middleware pour gérer les CORS et autoriser l'accès depuis n'importe quel domaine
 app.use((req, res, next) => {
@@ -27,7 +27,7 @@ app.use(express.json());
 
 // Définir les routes
 app.use('/api/books', booksRoutes);  // Route pour gérer les livres
-app.use('/api/auth', userRoutes);    // Route pour gérer l'authentification (si tu en as une)
+app.use('/api/auth', userRoutes);    // Route pour gérer l'authentification
 
 // Servir les images statiques depuis le dossier "images"
 app.use('/images', express.static(path.join(__dirname, 'images')));

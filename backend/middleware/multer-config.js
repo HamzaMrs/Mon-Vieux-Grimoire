@@ -6,41 +6,44 @@ const fs = require('fs');
 const MIME_TYPES = {
   'image/jpg': 'jpg',
   'image/jpeg': 'jpg',
-  'image/png': 'png'
+  'image/png': 'png',
 };
 
-// Configuration du stockage des fichiers avec multer
+// Configuration de multer
 const storage = multer.diskStorage({
   destination: (req, file, callback) => {
-    callback(null, 'images'); // Dossier de destination pour les fichiers
+    callback(null, 'images'); // Dossier de destination
   },
   filename: (req, file, callback) => {
-    const name = file.originalname.split(' ').join('_'); // Remplacement des espaces par des underscores dans le nom du fichier
-    const extension = MIME_TYPES[file.mimetype]; // Obtention de l'extension du fichier
-    callback(null, name + Date.now() + '.' + extension); // Création du nom du fichier avec un timestamp
-  }
+    const name = file.originalname.split(' ').join('_'); // Remplace les espaces par des underscores
+    const extension = MIME_TYPES[file.mimetype]; // Récupère l'extension
+    callback(null, name + Date.now() + '.' + extension); // Crée un nom unique
+  },
 });
 
-// Middleware pour optimiser l'image téléchargée
+// Middleware pour optimiser l'image
 const optimizeImage = async (req, res, next) => {
-  if (!req.file) return next(); // Si aucun fichier n'est téléchargé, passer au middleware suivant
+  if (!req.file) return next(); // Si aucun fichier, passe au middleware suivant
 
   const originalImagePath = req.file.path; // Chemin de l'image originale
   const optimizedImageName = `optimized_${path.basename(
     req.file.filename,
     path.extname(req.file.filename)
-  )}.webp`; // Création du nom de l'image optimisée avec extension .webp
-  const optimizedImagePath = path.join('images', optimizedImageName); // Chemin de l'image optimisée
+  )}.webp`; // Nom de l'image optimisée
+  const optimizedImagePath = path.join('images', optimizedImageName); // Chemin complet de l'image optimisée
 
   try {
-    sharp.cache(false); // Désactiver le cache de sharp pour cette opération
+    sharp.cache(false); // Désactiver le cache de sharp
     await sharp(originalImagePath)
-      .webp({ quality: 80 }) 
-      .resize(400) 
-      .toFile(optimizedImagePath); // Enregistrement de l'image optimisée
-      req.file.filename = optimizedImageName
+      .webp({ quality: 80 }) // Convertit en .webp avec une qualité de 80
+      .resize(400) // Redimensionne à une largeur maximale de 400px
+      .toFile(optimizedImagePath); // Enregistre l'image optimisée
 
-    // Supprime l'image originale après optimisation.
+    // Mettre à jour les informations dans req.file
+    req.file.filename = optimizedImageName;
+    req.file.path = optimizedImagePath;
+
+    // Supprimer l'image originale
     fs.unlink(originalImagePath, (error) => {
       if (error) {
         console.error("Impossible de supprimer l'image originale :", error);
@@ -49,11 +52,11 @@ const optimizeImage = async (req, res, next) => {
       next();
     });
   } catch (error) {
+    console.error("Erreur lors de l'optimisation de l'image :", error);
     next(error);
   }
 };
 
-// Exporte les fonctionnalités de téléchargement et d'optimisation d'image.
 module.exports = {
   upload: multer({ storage }).single('image'),
   optimizeImage,
