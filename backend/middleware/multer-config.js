@@ -30,9 +30,13 @@ const optimizeImage = async (req, res, next) => {
   const optimizedImagePath = path.join('images', optimizedImageName);
 
   try {
-    // Traitement de l'image pour la convertir en WebP
+    // Traitement de l'image pour la redimensionner et la convertir en WebP
     await sharp(originalImagePath)
-      .webp({ quality: 95 }) // Compression optimisée
+      .resize(206, 260, { 
+        fit: sharp.fit.cover,  // Utiliser 'cover' pour remplir et couper si nécessaire
+        position: sharp.strategy.entropy // Centrer sur la partie la plus "intéressante"
+      })
+      .webp({ quality: 95 })
       .toFile(optimizedImagePath);
 
     // Mettre à jour les informations du fichier dans req.file
@@ -55,6 +59,7 @@ const optimizeImage = async (req, res, next) => {
     next(error);
   }
 };
+
 
 // Exporter les middlewares
 module.exports = {
