@@ -27,7 +27,7 @@
     width: 206px;
     height: 260px;
     object-position: center;
-    object-fit: contain;
+    object-fit: cover;
 }
 .BookItem h3 {
     font-size: 18px;

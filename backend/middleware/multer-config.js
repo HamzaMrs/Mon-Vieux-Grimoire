@@ -32,7 +32,6 @@ const optimizeImage = async (req, res, next) => {
   try {
     // Traitement de l'image pour la convertir en WebP
     await sharp(originalImagePath)
-      .resize({ height: 400, fit: 'contain' })
       .webp({ quality: 95 }) // Compression optimisée
       .toFile(optimizedImagePath);
 

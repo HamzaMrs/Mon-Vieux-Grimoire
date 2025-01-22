@@ -25,7 +25,7 @@ exports.login = (req, res, next) => {
       .then(user => {
         // Si l'utilisateur n'est pas trouvé, renvoyer une erreur 401 Unauthorized
         if (!user) {
-          return res.status(401).json({ message: 'Paire login/mot de passe incorrecte' });
+          return res.status(401).json({ message: 'Adresse email ou mot de passe incorrecte' });
         }
   
         // Comparaison du mot de passe fourni avec celui stocké dans la base de données
@@ -33,7 +33,7 @@ exports.login = (req, res, next) => {
           .then(valid => {
             // Si le mot de passe est incorrect, renvoyer une erreur 401 Unauthorized
             if (!valid) {
-              return res.status(401).json({ message: 'Paire login/mot de passe incorrecte' });
+              return res.status(401).json({ message: 'Adresse email ou mot de passe incorrecte' });
             }
   
             // Si le mot de passe est correct, renvoyer une réponse 200 OK avec le userId et le token JWT
