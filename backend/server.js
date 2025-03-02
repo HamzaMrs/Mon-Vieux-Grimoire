@@ -13,7 +13,7 @@ const normalizePort = val => {
   return false;
 };
 
-// Le port sur lequel ton application écoute
+// Le port sur lequel mon application écoute
 const port = normalizePort(process.env.PORT || '4000');
 app.set('port', port);
 

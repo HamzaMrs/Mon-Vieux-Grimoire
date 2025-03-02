@@ -23,7 +23,7 @@ const averageRating = async(book) => {
   return book.averageRating; // Moyenne calculée des notes //
 };
 
-// Middleware "pre('save')" pour mettre à jour la moyenne avant de sauvegarder //
+// "pre('save')" pour mettre à jour la moyenne avant de sauvegarder //
 bookSchema.pre('save', (next) => {
   averageRating(this)
   next();

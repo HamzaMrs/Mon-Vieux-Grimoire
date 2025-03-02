@@ -1,10 +1,13 @@
-# Mon vieux Grimoire
+# Mon Vieux Grimoire
 
+## Comment lancer le projet ?
 
-## Comment lancer le projet ? 
+Pour le backend, allez dans le dossier `backend`, 
+installez les dépendances avec `npm install`, 
+puis démarrez le serveur avec `node server.js`.  
 
-### Avec npm
+Pour le frontend, allez dans le dossier `frontend`, 
+installez les dépendances avec `npm install`, 
+puis lancez l'application avec `npm start`.  
 
-Faites la commande `npm install` pour installer les dépendances puis `npm start` pour lancer le projet. 
-
-Le projet a été testé sur node 19. 
+Le projet a été testé sur Node 19.

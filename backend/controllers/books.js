@@ -3,24 +3,53 @@ const fs = require("fs");
 
 // Créer un livre
 exports.createBook = (req, res, next) => {
-    const bookObject = JSON.parse(req.body.book);
-
-    delete bookObject._id;
-    delete bookObject._userId;
-  
-    const book = new Book({
+  if (!req.body.book) {
+      return res.status(400).json({ message: "Données du livre manquantes" });
+  }
+  let bookObject;
+  try {
+      bookObject = JSON.parse(req.body.book);
+  } catch (error) {
+      return res.status(400).json({ message: "Format JSON invalide" });
+  }
+  // Vérifier tous les champs obligatoires
+  const requiredFields = ['title', 'author', 'year', 'genre', 'ratings'];
+  const missingFields = requiredFields.filter(field => !bookObject[field]);
+  if (missingFields.length > 0 || !req.file) {
+      return res.status(400).json({ 
+          message: "Tous les champs sont obligatoires, y compris l'image et les notes", 
+          missingFields: missingFields.concat(req.file ? [] : ['imageUrl'])
+      });
+  }
+  // Vérifier que ratings n'est pas vide
+  if (bookObject.ratings.length === 0) {
+      return res.status(400).json({ 
+          message: "Au moins une note est requise", 
+          missingFields: ['ratings']
+      });
+  }
+  // Vérifier que chaque note a un userId et un grade
+  bookObject.ratings.forEach((rating, index) => {
+      if (!rating.userId || !rating.grade) {
+          return res.status(400).json({ 
+              message: `La note ${index + 1} doit avoir un userId et un grade`, 
+              missingFields: ['userId', 'grade']
+          });
+      }
+  });
+  const book = new Book({
       ...bookObject,
       userId: req.auth.userId,
       imageUrl: `${req.protocol}://${req.get("host")}/images/${req.file.filename}`,
-      averageRating: bookObject.ratings[0].grade,
-    });
-    book
-      .save()
-      .then(() => {res.status(201).json({ message: "Livre enregistré !" });})
-      .catch((error) => {console.error("Erreur lors de l'enregistrement :", error);res.status(400).json({ error })});
-  };
-  
-
+      averageRating: bookObject.ratings.reduce((total, rating) => total + rating.grade, 0) / bookObject.ratings.length
+  });
+  book.save()
+      .then(() => res.status(201).json({ message: "Livre enregistré !" }))
+      .catch((error) => {
+          console.error("Erreur lors de l'enregistrement :", error);
+          res.status(400).json({ error });
+      });
+}
 
 //Obtenir tout les livres
 exports.getAllBooks = (req, res, next) => {
@@ -38,21 +67,38 @@ exports.getOneBook = (req, res, next) => {
 
 // Modifier un livre
 exports.modifyBook = (req, res, next) => {
-  const bookObject = req.file
-    ? {
-        ...JSON.parse(req.body.book),
-        imageUrl: `${req.protocol}://${req.get("host")}/images/${req.file.filename}`,
-      }
-    : { ...req.body };
+  let bookObject;
+
+  // Si un fichier est envoyé, on inclut l'URL de l'image, sinon on garde juste les données envoyées
+  if (req.file) {
+    bookObject = {
+      ...JSON.parse(req.body.book),
+      imageUrl: `${req.protocol}://${req.get("host")}/images/${req.file.filename}`,
+    };
+  } else {
+    bookObject = { ...req.body };
+  }
 
   delete bookObject._userId;
+
+  // Vérification des champs obligatoires
+  const requiredFields = ['title', 'author', 'year', 'genre'];
+  const missingFields = requiredFields.filter(field => !bookObject[field]);
+
+  if (missingFields.length > 0) {
+    return res.status(400).json({ 
+      message: "Champs obligatoires manquants", 
+      missingFields: missingFields 
+    });
+  }
+
   // Recherche du livre à modifier par son ID
   Book.findOne({ _id: req.params.id })
     .then((book) => {
-      // Vérification de l'utilisateur propriétaire du livre
       if (book.userId != req.auth.userId) {
-        res.status(401).json({ message: "Not authorized" });
+        return res.status(401).json({ message: "Non autorisé" });
       } else {
+        // Mise à jour du livre si tous les champs sont présents
         Book.updateOne(
           { _id: req.params.id },
           { ...bookObject, _id: req.params.id }
@@ -65,13 +111,15 @@ exports.modifyBook = (req, res, next) => {
             }
             res.status(200).json({ message: "Livre modifié!" });
           })
-          .catch((error) => res.status(401).json({ error }));
+          .catch((error) => res.status(500).json({ error }));
       }
     })
     .catch((error) => {
       res.status(400).json({ error });
     });
 };
+
+
 
 //Supprimer un livre
 exports.deleteBook = (req, res, next) => {
