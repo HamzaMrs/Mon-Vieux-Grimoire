@@ -13,7 +13,7 @@ mongoose.connect(process.env.DB_URI)
   .then(() => console.log('Connexion à MongoDB Atlas réussie !'))
   .catch((error) => console.log('Connexion à MongoDB Atlas échouée !', error));
 
-// Middleware pour gérer les CORS et autoriser l'accès depuis n'importe quel domaine
+// pour gérer les CORS et autoriser l'accès depuis n'importe quel domaine
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');  // Permet l'accès à toutes les origines
   res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content, Accept, Content-Type, Authorization');
@@ -21,7 +21,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Middleware pour parse le JSON dans les requêtes entrantes
+// pour parse le JSON dans les requêtes entrantes
 app.use(express.json());
 
 // Définir les routes
